@@ -1,3 +1,8 @@
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$username = "Administrador"
+$password = "Rds%200@!"
+
+
 # PSScriptInfo
 # .VERSION 1.0
 # .GUID 23743bae-7604-459d-82c5-a23d36b0820e
@@ -395,6 +400,17 @@ foreach ($action in $actions) {
     }
 }
 
+# This isn't needed but is a good security practice to complete
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force
+
+$reg_winlogon_path = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
+Set-ItemProperty -Path $reg_winlogon_path -Name AutoAdminLogon -Value 0
+Remove-ItemProperty -Path $reg_winlogon_path -Name DefaultUserName -ErrorAction SilentlyContinue
+Remove-ItemProperty -Path $reg_winlogon_path -Name DefaultPassword -ErrorAction SilentlyContinue
+
+
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 #Requires -Version 3.0
 <#PSScriptInfo
 .VERSION 1.0
@@ -547,6 +563,8 @@ if ($exit_code -eq 3010) {
     Write-Verbose -Message "hotfix $kb install complete"
 }
 exit $exit_code
+
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 #Requires -Version 3.0
 
@@ -1001,3 +1019,36 @@ Else
     Throw "Unable to establish an HTTP or HTTPS remoting session."
 }
 Write-VerboseLog "PS Remoting has been successfully configured for Ansible."
+
+winrm enumerate winrm/config/Listener
+
+## ==================================================================================================================================
+## SSH
+## ==================================================================================================================================
+
+
+Get-WindowsCapability -Online | ? Name -like 'OpenSSH*'
+
+# Install the OpenSSH Client
+Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0
+
+# Install the OpenSSH Server
+Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+
+
+# Start the sshd service
+Start-Service sshd
+
+# OPTIONAL but recommended:
+Set-Service -Name sshd -StartupType 'Automatic'
+
+# Confirm the firewall rule is configured. It should be created automatically by setup.
+Get-NetFirewallRule -Name *ssh*
+
+# There should be a firewall rule named "OpenSSH-Server-In-TCP", which should be enabled
+# If the firewall does not exist, create one
+New-NetFirewallRule -Name sshd -DisplayName 'OpenSSH Server (sshd)' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22
+
+## ==================================================================================================================================
+##
+## ==================================================================================================================================
