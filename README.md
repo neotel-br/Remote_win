@@ -4,7 +4,7 @@ Script em ansible para instalação do WinRM e openSSH de maneira rapida em serv
 
 ## Disclaimer
 
-*** Esse script baixa e executa scripts de terceiros para a facilitar a isntalação desses recursos***
+*** Esse script baixa e executa scripts de terceiros para a facilitar a instalação desses recursos***
 
 ## Requeriments
 Powershell v3.0 + 
